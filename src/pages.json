@@ -2,14 +2,21 @@
 	"easycom": {
 		"autoscan": true,
 		"custom": {
-			"^u-(.*)": "uview-plus/components/u-$1/u-$1.vue"
+			"^u-(.*)": "uview-plus/components/u-$1/u-$1.vue",
+			"Dialog(.*)": "@/components/Dialog/Dialog$1.vue"
 		}
 	},
 	"pages": [
 		{
 			"path": "pages/tabbar/home",
 			"style": {
-				"navigationBarTitleText": "uni-app"
+				"navigationBarTitleText": ""
+			}
+		},
+		{
+			"path": "pages/invite/invite",
+			"style": {
+				"navigationBarTitleText": ""
 			}
 		}
 	],

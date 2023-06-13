@@ -1,11 +1,13 @@
 <template>
   <NavBar title="DAPP" :showLeft="false" />
+  <DialogPay v-model:hasVerification="inviteParameter.hasVerification" :invite="inviteParameter.invite"
+    @confirmIdentify="userConfirm" />
   <view class="container">
     <view class="banner">
-      <u-swiper height="340rpx"></u-swiper>
+      <u-swiper height="340rpx" :list="swiperList"></u-swiper>
     </view>
     <view class="icon-list d-flex justify-between">
-      <view v-for="item in iconList">
+      <view v-for="item in iconList" @click="routeEvent(item)">
         <view class="d-flex justify-center">
           <u-image :showLoading="true" :src="item.image" width="55px" height="55px"></u-image>
         </view>
@@ -17,18 +19,18 @@
       <view class="impawn">
         <view class="title">质押数量</view>
         <view class="input">
-          <u-input placeholder="请输入您需要质押HONGBAO的数量" border="none" color="#fff"></u-input>
+          <u-input placeholder="请输入您需要质押HONGBAO的数量" border="none" color="#fff" v-model="impawnVal"></u-input>
         </view>
-        <view class="text">本次质押需消耗：0.00MENPIAO</view>
+        <view class="text">本次质押需消耗：{{ (impawnVal * systemInfo.fgxz_fwdb).toFixed(3) || 0 }}MENPIAO</view>
       </view>
       <view class="button">
-        <u-button text="提交" color="#3c63f4" size="large"></u-button>
+        <u-button text="提交" color="#3c63f4" size="large" @click="stakingSubmission"></u-button>
       </view>
     </view>
   </view>
 </template>
 
-<script lang="ts">
+<script lang="ts" setup>
 import Web3 from 'web3';
 import {
   env,
@@ -36,75 +38,178 @@ import {
   check,
   Account,
 } from '@/common/web3/web3API';
-import { checkUser } from '@/api';
+import { checkUser, addUser, pledge, getConfigInfo } from '@/api';
 import * as auth from '@/utils/auth';
+import { ref, onMounted, reactive } from 'vue'
+import type { Ref } from 'vue';
 
-export default {
-  data() {
-    return {
-      iconList: [
-        {
-          title: 'SWAP',
-          image: '/static/image/icons/withdraw.png',
-        },
-        {
-          title: '推广',
-          image: '/static/image/icons/recharge.png',
-        },
-        {
-          title: '我的团队',
-          image: '/static/image/icons/promotion.png',
-        },
-      ],
+const iconList = reactive([
+  {
+    title: 'SWAP',
+    image: '../../static/image/withdraw.png',
+    route: '',
+  },
+  {
+    title: '推广',
+    image: '../../static/image/recharge.png',
+    route: '/pages/invite/invite',
+  },
+  {
+    title: '我的团队',
+    image: '../../static/image/promotion.png',
+    route: '',
+  },
+])
+// 邀请码弹框参数
+const inviteParameter = reactive({
+  hasVerification: false,
+  invite: true,
+})
+// 质押数量
+const impawnVal: Ref<number | any> = ref('');
+
+// 轮播图
+const swiperList = ref([
+  '../../static/image/banner.png'
+])
+
+// 邀请码
+const invitationCode = ref('')
+
+// 系统信息
+const systemInfo = reactive({
+  fgxz_fwdb: 0,
+});
+
+// web3初始化
+async function init() {
+  // 检测环境、切换到币安测试链并连接dapp
+  try {
+    uni.showLoading({ title: '授权中...', mask: true });
+    // 创建web3实例
+    const web3 = new Web3((window as any).ethereum);
+    await Account.init(web3);
+    await Account.addCToken('USDT');
+    auth.setAccount({ address: Account.address, balance: Account.cTokens['USDT'].balance });
+    getData();
+  } catch (e: any) {
+    console.error(e);
+    switch (e.code) {
+      case -32000:
+        alert(`${env[CHAIN_NAME_SYMBOL].name}的JSON-RPC接口异常`);
+        break;
+      default:
+        // 处理其他错误
+        break;
+    }
+  }
+  /* if (await check()) {
+    try {
+      uni.showLoading({ title: '授权中...', mask: true });
+      // 创建web3实例
+      const web3 = new Web3((window as any).ethereum);
+      await Account.init(web3);
+      await Account.addCToken('USDT');
+      auth.setAccount({ address: Account.address, balance: Account.cTokens['USDT'].balance });
+      getData();
+    } catch (e: any) {
+      console.error(e);
+      switch (e.code) {
+        case -32000:
+          alert(`${env[CHAIN_NAME_SYMBOL].name}的JSON-RPC接口异常`);
+          break;
+        default:
+          // 处理其他错误
+          break;
+      }
+    }
+  } */
+}
+// 检测用户是否授权
+async function getData() {
+  const address = auth.getAccount().address;
+  if (address) {
+    const params = {
+      address: address,
     };
-  },
-  methods: {
-    // web3初始化
-    async init() {
-      // 检测环境、切换到币安测试链并连接dapp
-      if (await check()) {
-        try {
-          uni.showLoading({ title: '授权中...', mask: true });
-          // 创建web3实例
-          const web3 = new Web3((window as any).ethereum);
-          await Account.init(web3);
-          await Account.addCToken('USDT');
-          auth.setAccount({ address: Account.address, balance: Account.cTokens['USDT'].balance });
-          this.checkUser();
-        } catch (e: any) {
-          console.error(e);
-          switch (e.code) {
-            case -32000:
-              alert(`${env[CHAIN_NAME_SYMBOL].name}的JSON-RPC接口异常`);
-              break;
-            default:
-              // 处理其他错误
-              break;
-          }
-        }
+    try {
+      const res = await checkUser(params);
+      auth.setToken(res._token);
+      getSystemInfo();
+    } catch (error) {
+      if (invitationCode.value) {
+        userConfirm(invitationCode.value)
+      } else {
+        inviteParameter.hasVerification = true;
       }
-    },
-    // 检测用户是否授权
-    async checkUser() {
-      const address = auth.getAccount().address;
-      if (address) {
-        const params = {
-          address: address,
-        };
-        try {
-          const res = await checkUser(params);
-          console.log('Response:', res);
-        } catch (error) {
-          console.error('Error:', error);
-        }
-      }
-    },
-  },
-  mounted() {
-    this.init();
-  },
-};
+    }
+  }
+}
+// 新增用户
+async function userConfirm(val: string) {
+  const params = {
+    address: auth.getAccount().address,
+    invite_code: val,
+  };
+  try {
+    const res = await addUser(params);
+    inviteParameter.hasVerification = false;
+    uni.showToast({
+      title: '绑定成功',
+      icon: 'none',
+    });
+  } catch (error: any) {
+    uni.showToast({
+      title: error.msg,
+      icon: 'none',
+    });
+    console.error('Error:', error);
+  }
+}
+// 质押提交
+function stakingSubmission() {
+  const params = {
+    nums: impawnVal.value,
+  }
+  uni.showLoading({ title: '提交中...', mask: true });
+  pledge(params).then(res => {
+    console.log(res);
+  }).catch(err => {
+    impawnVal.value = '';
+  })
+}
+// 获取系统信息
+async function getSystemInfo() {
+  const data = await getConfigInfo();
+  systemInfo.fgxz_fwdb = data.fgxz_fwdb;
+}
 
+
+function routeEvent(item: { route: string }): void {
+  if (item.route) {
+    uni.navigateTo({
+      url: item.route,
+    });
+  } else {
+    uni.showToast({
+      title: '暂未开放',
+      icon: 'none',
+    });
+  }
+}
+
+onMounted(() => {
+  init();
+  if (window.location.search) {
+    // 获取页面URL参数中的代码
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+    // 在代码中查找数字
+    const regex = /\d+/g;
+    const numbers = code?.match(regex);
+    invitationCode.value = numbers[0]
+  }
+})
 </script>
 
 <style lang="scss">

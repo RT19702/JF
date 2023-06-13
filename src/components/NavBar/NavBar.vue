@@ -1,6 +1,6 @@
 <template>
   <view class="nav-bar">
-    <view class="nav-bar-left">
+    <view class="nav-bar-left" @click="onLeftClick">
       <slot name="left" v-if="showLeft">
         <u-icon name="arrow-left" color="#fff" size="20" bold="true"></u-icon>
       </slot>
