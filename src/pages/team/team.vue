@@ -32,6 +32,9 @@
               <view class="thirdly text-center">{{ item.achievement_self }}</view>
               <view class="fourthly text-right">{{ item.achievement }}</view>
             </view>
+            <view class="d-flex" v-if="listData.list.length == 0">
+              <view class="text-center empty">暂无数据</view>
+            </view>
             <!-- <u-divider :text="$t('basic.noMore')" v-if="hasMore"></u-divider> -->
           </u-list>
         </view>
@@ -44,7 +47,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { getTeam } from '@/api';
 import * as auth from '@/utils/auth';
-//团队人数
+//团队列表
 const listData = reactive({
   list:[] as any[]
 });
@@ -64,17 +67,15 @@ const achievement = ref('-');
 // 获取团队信息
 async function init() {
     try {
-      const TOKEN = auth.getToken();
-      const data = await getTeam({'TOKEN': TOKEN});
-      console.log('data', data);
+      const data = await getTeam({ });
+      //console.log('data', data);
       achievement.value = data.achievement;
       direct_push_nums.value = data.direct_push_nums;
       team_nums.value = data.team_nums;
       listData.list = data.team_data;      
     } catch (error) {
       
-    }  
-    
+    }      
 }
 
 onMounted(() => {
@@ -92,6 +93,12 @@ onMounted(() => {
 
   .gary {
     color: #b3b3b3;
+  }
+
+  .empty{
+    width: 100%;
+    padding: 25rpx;
+    color: #c8c8ca;
   }
 
   .performance {
