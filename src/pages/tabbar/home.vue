@@ -21,7 +21,7 @@
         <view class="input">
           <u-input placeholder="请输入您需要质押HONGBAO的数量" border="none" color="#fff" v-model="impawnVal"></u-input>
         </view>
-        <view class="text">本次质押需消耗：{{ (impawnVal * systemInfo.fgxz_fwdb).toFixed(3) || 0 }}MENPIAO</view>
+        <view class="text">本次质押需消耗：{{ ((impawnVal * systemInfo.fgxz_fwdb) * (0.15)).toFixed(3) || 0 }}MENPIAO</view>
       </view>
       <view class="button">
         <u-button text="提交" color="#3c63f4" size="large" @click="stakingSubmission"></u-button>
@@ -173,7 +173,10 @@ function stakingSubmission() {
   }
   uni.showLoading({ title: '提交中...', mask: true });
   pledge(params).then(res => {
-    console.log(res);
+    uni.showToast({
+      title: '质押成功',
+      icon: 'none',
+    });
   }).catch(err => {
     impawnVal.value = '';
   })

@@ -55,3 +55,20 @@ export const getConfigInfo = () => {
     method: 'POST'
   })
 }
+
+// 货币流水
+export const getCoinFlow = (data: object) => {
+  return request({
+    url: userUrl + '/CurrencyDetails',
+    data,
+    method: 'POST'
+  })
+}
+
+// 获取用户信息
+export const getUserInfo = () => {
+  return request({
+    url: userUrl + '/getUserInfo',
+    method: 'POST'
+  })
+}
