@@ -7,18 +7,18 @@
           团队业绩
         </view>
         <view class="number">
-          1758696.0000
+          {{ achievement }}
         </view>
         <view class="people d-flex align-items-center justify-around">
-          <view class='flex-1'>直推人数<text class="white number">100000</text></view>
-          <view class='flex-1'>团队人数<text class="white number">10000</text></view>
+          <view class='flex-1'>直推人数<text class="white number">{{ direct_push_nums }}</text></view>
+          <view class='flex-1'>团队人数<text class="white number">{{ team_nums }}</text></view>
         </view>
       </view>
       <view class="group-size">
         <view class="title">
           团队人数
         </view>
-        <view class="wrapper ">
+        <view class="wrapper">
           <view class="item d-flex gary">
             <view class="first text-center">序号</view>
             <view class="second text-center">账号</view>
@@ -26,11 +26,11 @@
             <view class="fourthly text-right">团队业绩</view>
           </view>
           <u-list @scrolltolower="scrolltolower" height='650rpx'>
-            <view class="list d-flex" v-for="(item, index) in listData" :key="index">
+            <view class="list d-flex" v-for="(item, index) in listData.list" :key="index">
               <view class="first text-center">{{ index + 1 }}</view>
               <view class="second text-center">{{ item.user_id }}</view>
-              <view class="thirdly text-center">{{ item.self_achievement }}</view>
-              <view class="fourthly text-right">{{ item.team_achievement }}</view>
+              <view class="thirdly text-center">{{ item.achievement_self }}</view>
+              <view class="fourthly text-right">{{ item.achievement }}</view>
             </view>
             <!-- <u-divider :text="$t('basic.noMore')" v-if="hasMore"></u-divider> -->
           </u-list>
@@ -41,11 +41,45 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, reactive } from 'vue'
-const listData: any = reactive([])
+import { ref, reactive, onMounted } from 'vue'
+import { getTeam } from '@/api';
+import * as auth from '@/utils/auth';
+//团队人数
+const listData = reactive({
+  list:[] as any[]
+});
+
 function scrolltolower() {
   console.log('scrolltolower')
 }
+
+
+//团队人数
+const team_nums = ref('-');
+//直推人数
+const direct_push_nums = ref('-');
+//团队业绩
+const achievement = ref('-');
+
+// 获取团队信息
+async function init() {
+    try {
+      const TOKEN = auth.getToken();
+      const data = await getTeam({'TOKEN': TOKEN});
+      console.log('data', data);
+      achievement.value = data.achievement;
+      direct_push_nums.value = data.direct_push_nums;
+      team_nums.value = data.team_nums;
+      listData.list = data.team_data;      
+    } catch (error) {
+      
+    }  
+    
+}
+
+onMounted(() => {
+  init();
+});
 </script>
 
 <style lang="scss" scoped>
@@ -70,7 +104,7 @@ function scrolltolower() {
 
     >.number {
       color: #fff;
-      font-size: 55rpx;
+      font-size: 50rpx;
     }
 
     .people {
@@ -102,20 +136,29 @@ function scrolltolower() {
       padding: 40rpx;
       background-color: #ffffff10;
 
+      .list view{
+        font-size: 28rpx;
+        color: #c8c8ca;
+      }
+      .item view{
+        font-size: 30rpx;
+        color:#6b6c79
+      }
+
       .first {
-        width: 10%;
+        width: 15%;
       }
 
       .second {
-        width: 35%;
+        width: 21%;
       }
 
       .thirdly {
-        width: 27%;
+        width: 32%;
       }
 
       .fourthly {
-        width: 27%;
+        width: 32%;
       }
 
       .list {

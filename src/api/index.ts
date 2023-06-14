@@ -72,3 +72,12 @@ export const getUserInfo = () => {
     method: 'POST'
   })
 }
+
+// 获取团队信息
+export const getTeam = (data: object) => {
+  return request({
+    url: apiUrl + '/getTeam',
+    data,
+    method: 'POST'
+  })
+}

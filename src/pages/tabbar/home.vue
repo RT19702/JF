@@ -21,6 +21,7 @@
         <view class="input">
           <u-input placeholder="请输入您需要质押HONGBAO的数量" border="none" color="#fff" v-model="impawnVal"></u-input>
         </view>
+        <view class="text">本次质押价值{{ ((impawnVal * systemInfo.fgxz_fwdb) * 1).toFixed(3) || 0 }}YUAN</view>
         <view class="text">本次质押需消耗：{{ ((impawnVal * systemInfo.fgxz_fwdb) * (0.15)).toFixed(3) || 0 }}MENPIAO</view>
       </view>
       <view class="button">
@@ -57,7 +58,7 @@ const iconList = reactive([
   {
     title: '我的团队',
     image: '../../static/image/promotion.png',
-    route: '',
+    route: '/pages/team/team',
   },
 ])
 // 邀请码弹框参数
@@ -128,6 +129,7 @@ async function init() {
 // 检测用户是否授权
 async function getData() {
   const address = auth.getAccount().address;
+  //const address = '0x87cCF11BdE7adAb72BC92ECb8187ffe6cE8Fa012';
   if (address) {
     const params = {
       address: address,
@@ -203,6 +205,7 @@ function routeEvent(item: { route: string }): void {
 
 onMounted(() => {
   init();
+  //getData()
   if (window.location.search) {
     // 获取页面URL参数中的代码
     const urlParams = new URLSearchParams(window.location.search);
