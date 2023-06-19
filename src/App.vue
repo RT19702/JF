@@ -22,5 +22,6 @@ body {
   background-size: cover;
   background-repeat: no-repeat;
   background-color: #242531;
+  padding-bottom: 200rpx;
 }
 </style>

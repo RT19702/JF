@@ -1,0 +1,17 @@
+export interface Contracts {
+  YUAN: string
+  MENPIAO: string
+  HONGBAO: string
+  LANBAO: string
+  DEPOSIT: string
+}
+
+const contracts: Contracts = {
+  YUAN: "0x127A469cF79a854eB72871d396E86d05FC59E808",
+  MENPIAO: "0x425B10b95aE0D9E8F5a4844c139493a50161d72E",
+  HONGBAO: "0x4C2D38ddAa07754dD0C5132755ea9d071DfE5355",
+  LANBAO: "0xA966b2a016cb9E8f7568C2581F281f89784C9C23",
+  DEPOSIT: "0x164A9ccBE8DD66fb77d2705cFADAb427C23e0751",
+}
+
+export default contracts

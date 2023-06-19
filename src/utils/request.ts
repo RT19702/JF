@@ -19,7 +19,7 @@ function request<T extends string | AnyObject | ArrayBuffer | undefined>({ url, 
       },
       success: (res) => {
         const respone: any = res.data
-        if (respone.code === 0) {
+        if (respone.code === 0 || respone.code === 2) {
           resolve(respone.data)
         } else {
           if (respone.msg !== '' && respone.msg !== '用户信息不存在' && respone.msg !== '无效推荐码') {

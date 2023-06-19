@@ -32,27 +32,36 @@
 </template>
 
 <script lang="ts" setup>
-import Web3 from 'web3';
-import {
-  env,
-  CHAIN_NAME_SYMBOL,
-  check,
-  Account,
-} from '@/common/web3/web3API';
-import { checkUser, addUser, pledge, getConfigInfo } from '@/api';
-import * as auth from '@/utils/auth';
+import Web3 from 'web3'
+import { Account } from '@/common/web3/webMethods'
+import { checkUser, addUser, pledge, getConfigInfo } from '@/api'
+import * as auth from '@/utils/auth'
 import { ref, onMounted, reactive } from 'vue'
-import type { Ref } from 'vue';
 
-const iconList = reactive([
+interface IconItem {
+  title: string
+  image: string
+  route: string
+}
+
+interface InviteParameter {
+  hasVerification: boolean
+  invite: boolean
+}
+
+interface SystemInfo {
+  fgxz_fwdb: number
+}
+
+const iconList: IconItem[] = reactive([
   {
     title: 'SWAP',
-    image: '../../static/image/withdraw.png',
+    image: '/static/image/withdraw.png',
     route: '',
   },
   {
     title: '推广',
-    image: '../../static/image/recharge.png',
+    image: '/static/image/recharge.png',
     route: '/pages/invite/invite',
   },
   {
@@ -61,162 +70,127 @@ const iconList = reactive([
     route: '/pages/team/team',
   },
 ])
-// 邀请码弹框参数
-const inviteParameter = reactive({
+
+const inviteParameter: InviteParameter = reactive({
   hasVerification: false,
   invite: true,
 })
-// 质押数量
-const impawnVal: Ref<number | any> = ref('');
 
-// 轮播图
-const swiperList = ref([
-  '../../static/image/banner.png'
-])
+const impawnVal = ref<number | ''>('')
 
-// 邀请码
+const swiperList = ref(['../../static/image/banner.png'])
+
 const invitationCode = ref('')
 
-// 系统信息
-const systemInfo = reactive({
+const systemInfo: SystemInfo = reactive({
   fgxz_fwdb: 0,
-});
+})
 
-// web3初始化
 async function init() {
-  // 检测环境、切换到币安测试链并连接dapp
   try {
-    uni.showLoading({ title: '授权中...', mask: true });
-    // 创建web3实例
-    const web3 = new Web3((window as any).ethereum);
-    await Account.init(web3);
-    await Account.addCToken('USDT');
-    auth.setAccount({ address: Account.address, balance: Account.cTokens['USDT'].balance });
-    getData();
-  } catch (e: any) {
-    console.error(e);
-    switch (e.code) {
-      case -32000:
-        alert(`${env[CHAIN_NAME_SYMBOL].name}的JSON-RPC接口异常`);
-        break;
-      default:
-        // 处理其他错误
-        break;
-    }
+    uni.showLoading({ title: '授权中...', mask: true })
+    const web3 = new Web3((window as any).ethereum)
+    await Account.init(web3)
+    await Account.addCToken('YUAN', 'MENPIAO', 'HONGBAO', 'LANBAO')
+    auth.setAccount({ address: Account.address })
+    await getData()
+  } catch (error) {
+    console.log('🚀 ~ file: home.vue:97 ~ init ~ error:', error)
+    uni.hideLoading()
+    uni.showToast({
+      title: '授权失败',
+      icon: 'none',
+    })
   }
-  /* if (await check()) {
-    try {
-      uni.showLoading({ title: '授权中...', mask: true });
-      // 创建web3实例
-      const web3 = new Web3((window as any).ethereum);
-      await Account.init(web3);
-      await Account.addCToken('USDT');
-      auth.setAccount({ address: Account.address, balance: Account.cTokens['USDT'].balance });
-      getData();
-    } catch (e: any) {
-      console.error(e);
-      switch (e.code) {
-        case -32000:
-          alert(`${env[CHAIN_NAME_SYMBOL].name}的JSON-RPC接口异常`);
-          break;
-        default:
-          // 处理其他错误
-          break;
-      }
-    }
-  } */
 }
-// 检测用户是否授权
+
 async function getData() {
-  const address = auth.getAccount().address;
-  //const address = '0x87cCF11BdE7adAb72BC92ECb8187ffe6cE8Fa012';
+  const address = auth.getAccount().address
   if (address) {
     const params = {
       address: address,
-    };
+    }
     try {
-      const res = await checkUser(params);
-      auth.setToken(res._token);
-      getSystemInfo();
+      const res = await checkUser(params)
+      auth.setToken(res._token)
+      await getSystemInfo()
     } catch (error) {
       if (invitationCode.value) {
-        userConfirm(invitationCode.value)
+        await userConfirm(invitationCode.value)
       } else {
-        inviteParameter.hasVerification = true;
+        inviteParameter.hasVerification = true
       }
     }
   }
 }
-// 新增用户
+
 async function userConfirm(val: string) {
   const params = {
     address: auth.getAccount().address,
     invite_code: val,
-  };
+  }
   try {
-    const res = await addUser(params);
-    inviteParameter.hasVerification = false;
+    const res = await addUser(params)
+    inviteParameter.hasVerification = false
     uni.showToast({
       title: '绑定成功',
       icon: 'none',
-    });
+    })
   } catch (error: any) {
     uni.showToast({
       title: error.msg,
       icon: 'none',
-    });
-    console.error('Error:', error);
+    })
+    console.error('Error:', error)
   }
 }
-// 质押提交
-function stakingSubmission() {
+
+async function stakingSubmission() {
   const params = {
     nums: impawnVal.value,
   }
-  uni.showLoading({ title: '提交中...', mask: true });
-  pledge(params).then(res => {
+  uni.showLoading({ title: '提交中...', mask: true })
+  try {
+    await pledge(params)
     uni.showToast({
       title: '质押成功',
       icon: 'none',
-    });
-  }).catch(err => {
-    impawnVal.value = '';
-  })
+    })
+  } catch (error) {
+    impawnVal.value = ''
+  }
 }
-// 获取系统信息
+
 async function getSystemInfo() {
-  const data = await getConfigInfo();
-  systemInfo.fgxz_fwdb = data.fgxz_fwdb;
+  const data = await getConfigInfo()
+  systemInfo.fgxz_fwdb = data.fgxz_fwdb
 }
 
-
-function routeEvent(item: { route: string }): void {
+function routeEvent(item: IconItem): void {
   if (item.route) {
     uni.navigateTo({
       url: item.route,
-    });
+    })
   } else {
     uni.showToast({
       title: '暂未开放',
       icon: 'none',
-    });
+    })
   }
 }
 
-onMounted(() => {
-  init();
-  //getData()
+onMounted(async () => {
+  await init()
   if (window.location.search) {
-    // 获取页面URL参数中的代码
-    const urlParams = new URLSearchParams(window.location.search);
-    const code = urlParams.get('code');
-    // 在代码中查找数字
-    const regex = /\d+/g;
-    const numbers = code?.match(regex);
-    invitationCode.value = numbers[0]
+    const urlParams = new URLSearchParams(window.location.search)
+    const code = urlParams.get('code')
+    const regex = /\d+/g
+    const numbers = code?.match(regex)
+    invitationCode.value = numbers?.[0] || ''
   }
 })
 </script>
+
 
 <style lang="scss">
 .container {

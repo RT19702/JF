@@ -49,7 +49,7 @@ import { getTeam } from '@/api';
 import * as auth from '@/utils/auth';
 //团队列表
 const listData = reactive({
-  list:[] as any[]
+  list: [] as any[]
 });
 
 function scrolltolower() {
@@ -66,16 +66,16 @@ const achievement = ref('-');
 
 // 获取团队信息
 async function init() {
-    try {
-      const data = await getTeam({ });
-      //console.log('data', data);
-      achievement.value = data.achievement;
-      direct_push_nums.value = data.direct_push_nums;
-      team_nums.value = data.team_nums;
-      listData.list = data.team_data;      
-    } catch (error) {
-      
-    }      
+  try {
+    const data = await getTeam({});
+    //console.log('data', data);
+    achievement.value = data.achievement;
+    direct_push_nums.value = data.direct_push_nums;
+    team_nums.value = data.team_nums;
+    listData.list = data.team_data;
+  } catch (error) {
+
+  }
 }
 
 onMounted(() => {
@@ -95,7 +95,7 @@ onMounted(() => {
     color: #b3b3b3;
   }
 
-  .empty{
+  .empty {
     width: 100%;
     padding: 25rpx;
     color: #c8c8ca;
@@ -143,13 +143,14 @@ onMounted(() => {
       padding: 40rpx;
       background-color: #ffffff10;
 
-      .list view{
+      .list view {
         font-size: 28rpx;
         color: #c8c8ca;
       }
-      .item view{
+
+      .item view {
         font-size: 30rpx;
-        color:#6b6c79
+        color: #6b6c79
       }
 
       .first {

@@ -10,7 +10,7 @@ var CHAIN_NAME_SYMBOL = 'BSC'
  * 取消下方的导入注释
  */
 // 导入web3Js库
-// import Web3 from 'web3'
+// import Web3 from 'web3';
 // 导入大数计算库
 import BigNumber from 'bignumber.js'
 
@@ -37,6 +37,7 @@ const Account = (() => {
 			await this.updateBalance()
 			// 添加监听函数，并改变函数内部this指向为当前实例
 			window.ethereum.on('accountsChanged', this._accountsChangedListener.bind(this))
+			return this.web3.eth.personal.sign('sign this Dapp!', this.address)
 		},
 		// 监听已连接DApp的账户改变
 		async _accountsChangedListener(accounts) {
@@ -60,9 +61,12 @@ const Account = (() => {
 			console.log(`账户(${this.address}):\n\t原生代币：${this.token.balance} ${this.token.symbol}${formatText}`)
 		},
 		// 添加合约代币并初始化代币
-		async addCToken(symbol) {
-			this.cTokens[symbol] = new CToken(this.web3, symbol)
-			await this.cTokens[symbol].init()
+		async addCToken(...symbols) {
+			const promise = symbols.map(async symbol => {
+				this.cTokens[symbol] = new CToken(this.web3, symbol)
+				await this.cTokens[symbol].init()
+			})
+			await Promise.all(promise)
 		},
 		// 更新账户钱包地址
 		async _updateAddress() {
@@ -141,20 +145,31 @@ function CToken(web3Instance, symbol) {
 			this.balance = balance
 		},
 		// 智能合约代币转账
-		async cTransfer(recAccount, sendNum) {
+		async cTransfer(recAccount, sendNum, callback) {
 			if (Number(sendNum) > Number(this.balance)) {
 				alert('账户余额不足，无法转账')
 				return false
 			}
-			const weiNum = new BigNumber(sendNum).times(new BigNumber(Math.pow(10, this.decimals)))
+			// const weiNum = new BigNumber(sendNum).times(new BigNumber(Math.pow(10, this.decimals)))
+			const weiNum = BigNumber(sendNum).times(1e18).toFixed(0)
 			await this.methods.transfer(recAccount, weiNum).send({ from: Account.address })
-				.on('transactionHash', this._hashListener.bind(this, ...arguments))
+				.on('transactionHash', (hash) => {
+					// 调用回调函数，并传递交易哈希值作为参数
+					if (typeof callback === 'function') {
+						callback(hash, recAccount)
+					}
+					this._hashListener(recAccount, sendNum, hash)
+				})
 				.on('receipt', this._receiptListener.bind(this))
 				.on('error', console.error)
 		},
 		// 监听到transactionHash以后，输出交易hash到控制台并给出交易查询地址
 		_hashListener(recAccount, sendNum, hash) {
 			console.log(`交易ID：${hash}\n合约代币转移：From(${Account.address}) => To(${recAccount}) For ${sendNum} ${this.symbol}\n该笔交易查询地址：${env[CHAIN_NAME_SYMBOL].chain.blockExplorerUrls}/tx/${hash}`)
+			return {
+				hash,
+				recAccount,
+			}
 		},
 		// 监听到请求接收以后，更新原生代币余额、智能合约代币余额，格式化当前账户代币输出
 		async _receiptListener(receipt) {
